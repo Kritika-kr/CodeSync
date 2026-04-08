@@ -1,16 +1,25 @@
-# React + Vite
+# Collab Code
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack platform where users can **code together, chat, video call, draw, and share screens in real-time** — all in one place.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🌟 Features
 
-## React Compiler
+- 👨‍💻 Real-time multi-user code editor (Monaco + Socket.IO)  
+- ⚡ Live code execution (JavaScript deployed, multi-language local)  
+- 💬 Instant chat system  
+- 🎥 Peer-to-peer video calling (WebRTC)  
+- 🖥️ Screen sharing  
+- 🎨 Collaborative whiteboard  
+- 🧩 Responsive UI with fullscreen & toggle panels  
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🏗️ Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+**Frontend:** React (Vite), Monaco Editor, Socket.IO Client, WebRTC, Canvas API  
+**Backend:** Node.js, Express.js, Socket.IO  
+**Deployment:** Vercel, Render  
+
+---
