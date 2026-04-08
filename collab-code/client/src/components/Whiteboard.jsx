@@ -2,7 +2,7 @@ import { useRef, useEffect } from "react";
 import socket from "../socket";
 import { useParams } from "react-router-dom";
 
-export default function Whiteboard() {
+export default function Whiteboard({ fullScreen }) {
   const canvasRef = useRef(null);
   const { id: roomId } = useParams();
 
@@ -12,27 +12,29 @@ export default function Whiteboard() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
 
-    // ✅ Set proper size
-    canvas.width = 600;
-    canvas.height = 300;
+    // 🔥 Dynamic size
+    canvas.width = canvas.offsetWidth;
+    canvas.height = fullScreen ? window.innerHeight * 0.8 : 300;
+
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
 
     const drawLine = (x0, y0, x1, y1) => {
       ctx.beginPath();
       ctx.moveTo(x0, y0);
       ctx.lineTo(x1, y1);
-      ctx.strokeStyle = "white";
-      ctx.lineWidth = 2;
       ctx.stroke();
       ctx.closePath();
     };
 
-    // ✅ Receive drawing
+    // 🔥 Receive drawing
     socket.on("draw", ({ x0, y0, x1, y1 }) => {
       drawLine(x0, y0, x1, y1);
     });
 
     return () => socket.off("draw");
-  }, []);
+  }, [fullScreen]);
 
   const startDrawing = (e) => {
     drawing = true;
@@ -58,8 +60,6 @@ export default function Whiteboard() {
     ctx.beginPath();
     ctx.moveTo(prevX, prevY);
     ctx.lineTo(x, y);
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 2;
     ctx.stroke();
 
     socket.emit("draw", {
@@ -81,14 +81,16 @@ export default function Whiteboard() {
       <canvas
         ref={canvasRef}
         style={{
-          background: "#111",
+          background: "#020617",
+          border: "2px solid #334155",
+          borderRadius: "10px",
           cursor: "crosshair",
-          border: "2px solid white",
-          display: "block",
-          width: "100%"
+          width: "100%",
+          height: fullScreen ? "80vh" : "300px",
         }}
         onMouseDown={startDrawing}
         onMouseUp={stopDrawing}
+        onMouseLeave={stopDrawing}
         onMouseMove={draw}
       />
     </div>

@@ -10,39 +10,42 @@ export default function Chat() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
 
-  const messagesEndRef = useRef(null);
+  const chatRef = useRef(null);
+  const bottomRef = useRef(null);
 
   // 🔥 Receive messages
   useEffect(() => {
-    const handleMessage = (data) => {
+    const handler = (data) => {
       setMessages((prev) => [...prev, data]);
     };
 
-    socket.on("receive_message", handleMessage);
+    socket.on("receive_message", handler);
 
-    return () => {
-      socket.off("receive_message", handleMessage);
-    };
+    return () => socket.off("receive_message", handler);
   }, []);
 
-  // 🔥 Auto-scroll
+  // 🔥 Smart auto-scroll (only if near bottom)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = chatRef.current;
+    if (!container) return;
+
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop <=
+      container.clientHeight + 50;
+
+    if (isNearBottom) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   // 🔥 Send message
   const sendMessage = () => {
     if (!message.trim()) return;
 
-    const time = new Date().toLocaleTimeString();
-
     socket.emit("send_message", {
       roomId,
       username,
-      message: {
-        text: message,
-        time,
-      },
+      message,
     });
 
     setMessage("");
@@ -51,53 +54,106 @@ export default function Chat() {
   return (
     <div
       style={{
-        width: "250px",
-        background: "#0f172a",
-        color: "white",
-        padding: "10px",
         display: "flex",
         flexDirection: "column",
+        height: "100%",
+        padding: "10px",
+        background: "#0f172a",
       }}
     >
-      <h3>Chat</h3>
+      <h3 style={{ textAlign: "center", color: "white" }}>Chat</h3>
 
-      {/* Messages */}
+      {/* 🔹 Messages */}
       <div
+        ref={chatRef}
         style={{
           flex: 1,
           overflowY: "auto",
-          marginBottom: "10px",
+          padding: "10px",
+          borderRadius: "10px",
+          background: "#020617",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
         }}
       >
-        {messages.map((msg, index) => (
-          <p key={index}>
-            <strong>
-              {msg.username === username ? "You" : msg.username}:
-            </strong>{" "}
-            {msg.message.text}
-            <span style={{ fontSize: "10px", marginLeft: "5px" }}>
-              ({msg.message.time})
-            </span>
-          </p>
-        ))}
+        {messages.map((msg, index) => {
+          const isMe = msg.username === username;
 
-        {/* Auto scroll target */}
-        <div ref={messagesEndRef} />
+          return (
+            <div
+              key={index}
+              style={{
+                display: "flex",
+                justifyContent: isMe ? "flex-end" : "flex-start",
+              }}
+            >
+              <div
+                style={{
+                  maxWidth: "70%",
+                  padding: "8px 12px",
+                  borderRadius: "12px",
+                  background: isMe ? "#22c55e" : "#334155",
+                  color: "white",
+                  wordBreak: "break-word",
+                }}
+              >
+                {!isMe && (
+                  <div style={{ fontSize: "10px", opacity: 0.6 }}>
+                    {msg.username}
+                  </div>
+                )}
+
+                <div>{msg.message}</div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* 👇 Anchor for scrolling */}
+        <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <input
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="Type message..."
-        onKeyDown={(e) => {
-          if (e.key === "Enter") sendMessage();
+      {/* 🔹 Input */}
+      <div
+        style={{
+          marginTop: "10px",
+          display: "flex",
+          gap: "8px",
         }}
-      />
+      >
+        <input
+          type="text"
+          placeholder="Type message..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          style={{
+            flex: 1,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "none",
+            outline: "none",
+            background: "#1e293b",
+            color: "white",
+          }}
+        />
 
-      <button onClick={sendMessage} style={{ marginTop: "5px" }}>
-        Send
-      </button>
+        <button
+          onClick={sendMessage}
+          style={{
+            padding: "10px 14px",
+            background: "#22c55e",
+            border: "none",
+            color: "white",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          Send
+        </button>
+      </div>
     </div>
   );
 }

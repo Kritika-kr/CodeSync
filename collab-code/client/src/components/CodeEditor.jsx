@@ -4,7 +4,7 @@ import socket from "../socket";
 import { useParams } from "react-router-dom";
 import { runCode } from "../api/runCode";
 
-export default function CodeEditor() {
+export default function CodeEditor({ fullScreen }) {
   const [code, setCode] = useState("// Start coding...");
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,12 +45,20 @@ export default function CodeEditor() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          marginBottom: "10px",
         }}
       >
-        {/* Language Selector */}
+        {/* Language */}
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
+          style={{
+            padding: "6px",
+            borderRadius: "6px",
+            background: "#1e293b",
+            color: "white",
+            border: "none",
+          }}
         >
           <option value="javascript">JavaScript</option>
           <option value="python">Python</option>
@@ -58,13 +66,30 @@ export default function CodeEditor() {
           <option value="java">Java</option>
         </select>
 
-        <button onClick={handleRun}>
+        {/* Run */}
+        <button
+          onClick={handleRun}
+          style={{
+            background: "#22c55e",
+            color: "white",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
           {loading ? "Running..." : "Run Code"}
         </button>
       </div>
 
-      {/* 🔹 Editor */}
-      <div style={{ height: "400px", marginTop: "10px" }}>
+      {/* 🔥 Editor */}
+      <div
+        style={{
+          height: fullScreen ? "80vh" : "400px",
+          borderRadius: "8px",
+          overflow: "hidden",
+        }}
+      >
         <Editor
           height="100%"
           language={language === "cpp" ? "cpp" : language}
@@ -76,14 +101,16 @@ export default function CodeEditor() {
 
       {/* 🔹 Output */}
       <div style={{ marginTop: "10px" }}>
-        <h4>Output:</h4>
+        <h4 style={{ color: "white" }}>Output:</h4>
         <pre
           style={{
-            background: "#0f172a",
+            background: "#020617",
             color: "#22c55e",
             padding: "10px",
             borderRadius: "8px",
             minHeight: "100px",
+            maxHeight: "150px",
+            overflowY: "auto",
           }}
         >
           {output}

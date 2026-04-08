@@ -44,6 +44,19 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("room_users", usersInRoom[roomId]);
   });
 
+  // 🔥 LEAVE ROOM
+  socket.on("leave_room", (roomId) => {
+    socket.leave(roomId);
+
+    if (usersInRoom[roomId]) {
+      usersInRoom[roomId] = usersInRoom[roomId].filter(
+        (u) => u.id !== socket.id
+      );
+
+      io.to(roomId).emit("room_users", usersInRoom[roomId]);
+    }
+  });
+
   // ✅ CODE SYNC
   socket.on("code_change", ({ roomId, code }) => {
     socket.to(roomId).emit("code_update", code);
@@ -70,7 +83,7 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("ice-candidate", candidate);
   });
 
-  // 🎨 WHITEBOARD DRAW
+  // 🎨 WHITEBOARD
   socket.on("draw", ({ roomId, x0, y0, x1, y1 }) => {
     socket.to(roomId).emit("draw", { x0, y0, x1, y1 });
   });
@@ -90,31 +103,21 @@ io.on("connection", (socket) => {
 });
 
 
+// ✅ CODE EXECUTION
 app.post("/run", (req, res) => {
   const { code, language } = req.body;
 
-  const fileName = "temp";
   let command;
+  const fileName = "temp";
 
   try {
     if (language === "javascript") {
       fs.writeFileSync(`${fileName}.js`, code);
       command = `node ${fileName}.js`;
-    }
-
-    else if (language === "python") {
-      fs.writeFileSync(`${fileName}.py`, code);
-      command = `python ${fileName}.py`;
-    }
-
-    else if (language === "cpp") {
-      fs.writeFileSync(`${fileName}.cpp`, code);
-      command = `g++ ${fileName}.cpp -o ${fileName}.exe && ${fileName}.exe`;
-    }
-
-    else if (language === "java") {
-      fs.writeFileSync(`Main.java`, code);
-      command = `javac Main.java && java Main`;
+    } else {
+      return res.json({
+        output: "⚠️ Only JavaScript supported in deployed version",
+      });
     }
 
     exec(command, (error, stdout, stderr) => {
@@ -123,12 +126,15 @@ app.post("/run", (req, res) => {
 
       res.json({ output: stdout || "No output" });
     });
-
   } catch {
     res.json({ output: "Execution error" });
   }
 });
+
+
 // ✅ START SERVER
-server.listen(5000, () => {
-  console.log("Server running on port 5000");
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log("Server running on port", PORT);
 });
