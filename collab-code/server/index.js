@@ -22,7 +22,6 @@ const usersInRoom = {};
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  // ✅ JOIN ROOM
   socket.on("join_room", ({ roomId, username }) => {
     socket.join(roomId);
 
@@ -44,7 +43,6 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("room_users", usersInRoom[roomId]);
   });
 
-  // 🔥 LEAVE ROOM (manual leave button)
   socket.on("leave_room", (roomId) => {
     socket.leave(roomId);
 
@@ -56,16 +54,14 @@ io.on("connection", (socket) => {
       io.to(roomId).emit("room_users", usersInRoom[roomId]);
     }
 
-    // 🔥 notify others (remove video)
     socket.to(roomId).emit("user-disconnected", socket.id);
   });
 
-  // ✅ CODE SYNC
   socket.on("code_change", ({ roomId, code }) => {
     socket.to(roomId).emit("code_update", code);
   });
 
-  // ✅ CHAT
+  
   socket.on("send_message", ({ roomId, username, message }) => {
     io.to(roomId).emit("receive_message", {
       username,
@@ -73,7 +69,6 @@ io.on("connection", (socket) => {
     });
   });
 
-  // 🔥 VIDEO SIGNALING
   socket.on("video-offer", ({ offer, roomId }) => {
     socket.to(roomId).emit("video-offer", offer);
   });
@@ -86,12 +81,12 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("ice-candidate", candidate);
   });
 
-  // 🎨 WHITEBOARD
+ 
   socket.on("draw", ({ roomId, x0, y0, x1, y1 }) => {
     socket.to(roomId).emit("draw", { x0, y0, x1, y1 });
   });
 
-  // 🔥 DISCONNECT (important)
+ 
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
 
@@ -102,14 +97,13 @@ io.on("connection", (socket) => {
 
       io.to(roomId).emit("room_users", usersInRoom[roomId]);
 
-      // 🔥 notify all users in room
+    
       socket.to(roomId).emit("user-disconnected", socket.id);
     }
   });
 });
 
 
-// ✅ CODE EXECUTION (DEPLOY SAFE)
 app.post("/run", (req, res) => {
   const { code, language } = req.body;
 
@@ -137,7 +131,7 @@ app.post("/run", (req, res) => {
 });
 
 
-// ✅ START SERVER
+
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {

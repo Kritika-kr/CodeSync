@@ -29,12 +29,10 @@ export default function VideoCall() {
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
 
-      // ✅ Add both audio + video tracks
       stream.getTracks().forEach((track) => {
         peerConnection.current.addTrack(track, stream);
       });
 
-      // ✅ Receive remote stream
       peerConnection.current.ontrack = (event) => {
         remoteVideo.current.srcObject = event.streams[0];
 
@@ -44,7 +42,6 @@ export default function VideoCall() {
         };
       };
 
-      // ✅ ICE candidate
       peerConnection.current.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit("ice-candidate", {
@@ -57,7 +54,6 @@ export default function VideoCall() {
 
     init();
 
-    // 🔥 SIGNALING
     socket.on("video-offer", async (offer) => {
       await peerConnection.current.setRemoteDescription(offer);
 
@@ -79,7 +75,6 @@ export default function VideoCall() {
       }
     });
 
-    // 🔥 USER LEAVE CLEANUP
     socket.on("user-disconnected", () => {
       if (remoteVideo.current) {
         remoteVideo.current.srcObject = null;
@@ -99,7 +94,6 @@ export default function VideoCall() {
     };
   }, []);
 
-  // 📞 START CALL
   const startCall = async () => {
     const offer = await peerConnection.current.createOffer();
     await peerConnection.current.setLocalDescription(offer);
@@ -107,21 +101,18 @@ export default function VideoCall() {
     socket.emit("video-offer", { offer, roomId });
   };
 
-  // 🎥 CAMERA TOGGLE
   const toggleCamera = () => {
     const track = localStream.current.getVideoTracks()[0];
     track.enabled = !track.enabled;
     setCameraOn(track.enabled);
   };
 
-  // 🎤 MIC TOGGLE
   const toggleMic = () => {
     const track = localStream.current.getAudioTracks()[0];
     track.enabled = !track.enabled;
     setMicOn(track.enabled);
   };
 
-  // 🖥️ SCREEN SHARE
   const toggleScreenShare = async () => {
     if (!screenSharing) {
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
@@ -166,7 +157,7 @@ export default function VideoCall() {
     <div style={{ textAlign: "center", color: "white" }}>
       <h3>Video Call</h3>
 
-      {/* 🔥 FULLSCREEN */}
+
       {fullScreen ? (
         <div
           style={{
@@ -210,7 +201,7 @@ export default function VideoCall() {
         </div>
       ) : (
         <>
-          {/* NORMAL VIEW */}
+   
           <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
             <video
               ref={localVideo}
@@ -236,7 +227,6 @@ export default function VideoCall() {
             />
           </div>
 
-          {/* CONTROLS */}
           <div style={{ marginTop: "10px", display: "flex", gap: "6px", justifyContent: "center" }}>
             <button onClick={startCall}>📞</button>
 
@@ -252,7 +242,7 @@ export default function VideoCall() {
               {screenSharing ? "Stop Share" : "Share Screen"}
             </button>
 
-            {/* 🔥 FULLSCREEN BUTTON */}
+        
             <button onClick={() => setFullScreen(true)}>
               ⛶
             </button>

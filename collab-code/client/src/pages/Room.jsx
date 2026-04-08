@@ -37,7 +37,7 @@ export default function Room() {
   return (
     <div style={styles.container}>
       
-      {/* USERS PANEL */}
+    
       <div style={{ ...styles.sidebar, width: showUsers ? 220 : 0 }}>
         {showUsers && (
           <>
@@ -62,10 +62,9 @@ export default function Room() {
         )}
       </div>
 
-      {/* CENTER */}
+
       <div style={styles.main}>
-        
-        {/* CONTROL BAR */}
+
         <div style={styles.topbar}>
           <button onClick={() => setShowUsers(!showUsers)}>👥</button>
           <button onClick={() => setShowChat(!showChat)}>💬</button>
@@ -80,7 +79,6 @@ export default function Room() {
         {!fullEditor && <Whiteboard fullScreen={fullWhiteboard} />}
       </div>
 
-      {/* RIGHT PANEL */}
       {(showChat || showVideo) && (
         <div style={styles.rightPanel}>
           
@@ -110,7 +108,7 @@ const styles = {
     fontFamily: "Arial, sans-serif",
   },
 
-  // 🔹 LEFT SIDEBAR
+  
   sidebar: {
     background: "#020617",
     padding: "15px",
@@ -162,7 +160,7 @@ const styles = {
     fontSize: "13px",
   },
 
-  // 🔹 CENTER
+
   main: {
     flex: 1,
     padding: "15px",
@@ -181,7 +179,7 @@ const styles = {
     fontSize: "13px",
   },
 
-  // 🔹 RIGHT PANEL
+
   rightPanel: {
     width: "320px",
     display: "flex",

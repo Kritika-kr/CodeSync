@@ -13,7 +13,7 @@ export default function Chat() {
   const chatRef = useRef(null);
   const bottomRef = useRef(null);
 
-  // 🔥 Receive messages
+  
   useEffect(() => {
     const handler = (data) => {
       setMessages((prev) => [...prev, data]);
@@ -24,7 +24,7 @@ export default function Chat() {
     return () => socket.off("receive_message", handler);
   }, []);
 
-  // 🔥 Smart auto-scroll (only if near bottom)
+  
   useEffect(() => {
     const container = chatRef.current;
     if (!container) return;
@@ -38,7 +38,7 @@ export default function Chat() {
     }
   }, [messages]);
 
-  // 🔥 Send message
+  
   const sendMessage = () => {
     if (!message.trim()) return;
 
@@ -63,7 +63,7 @@ export default function Chat() {
     >
       <h3 style={{ textAlign: "center", color: "white" }}>Chat</h3>
 
-      {/* 🔹 Messages */}
+  
       <div
         ref={chatRef}
         style={{
@@ -110,11 +110,11 @@ export default function Chat() {
           );
         })}
 
-        {/* 👇 Anchor for scrolling */}
+  
         <div ref={bottomRef} />
       </div>
 
-      {/* 🔹 Input */}
+  
       <div
         style={{
           marginTop: "10px",

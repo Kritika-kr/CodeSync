@@ -12,7 +12,6 @@ export default function Whiteboard({ fullScreen }) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
 
-    // 🔥 Dynamic size
     canvas.width = canvas.offsetWidth;
     canvas.height = fullScreen ? window.innerHeight * 0.8 : 300;
 
@@ -28,7 +27,7 @@ export default function Whiteboard({ fullScreen }) {
       ctx.closePath();
     };
 
-    // 🔥 Receive drawing
+    
     socket.on("draw", ({ x0, y0, x1, y1 }) => {
       drawLine(x0, y0, x1, y1);
     });

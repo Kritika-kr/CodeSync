@@ -34,7 +34,7 @@ export default function Home() {
         color: "white",
       }}
     >
-      {/* 🔹 Card */}
+      {/* Card */}
       <div
         style={{
           width: "350px",
@@ -45,15 +45,15 @@ export default function Home() {
           textAlign: "center",
         }}
       >
-        {/* 🔥 Title */}
+        {/* Title */}
         <h1 style={{ marginBottom: "10px" }}>Collab Code</h1>
 
-        {/* 🔥 Tagline */}
+        {/*  Tagline */}
         <p style={{ fontSize: "14px", opacity: 0.7, marginBottom: "20px" }}>
           Code • Chat • Collaborate in Real-time
         </p>
 
-        {/* 🔹 Username */}
+        {/* Username */}
         <input
           placeholder="Enter your name"
           value={username}
@@ -62,7 +62,7 @@ export default function Home() {
           onKeyDown={(e) => e.key === "Enter" && createRoom()}
         />
 
-        {/* 🔹 Create Room */}
+        {/* Create Room */}
         <button
           onClick={createRoom}
           style={primaryBtn}
@@ -74,7 +74,7 @@ export default function Home() {
 
         <p style={{ margin: "15px 0", opacity: 0.6 }}>OR</p>
 
-        {/* 🔹 Generate Room ID */}
+        {/* Generate Room ID */}
         <button
           onClick={() => setRoomId(uuid())}
           style={{
@@ -89,7 +89,7 @@ export default function Home() {
           Generate Room ID
         </button>
 
-        {/* 🔹 Room ID */}
+        {/* Room ID */}
         <input
           placeholder="Enter Room ID"
           value={roomId}
@@ -98,7 +98,7 @@ export default function Home() {
           onKeyDown={(e) => e.key === "Enter" && joinRoom()}
         />
 
-        {/* 🔹 Join Room */}
+        {/*  Join Room */}
         <button
           onClick={joinRoom}
           style={secondaryBtn}
@@ -108,7 +108,7 @@ export default function Home() {
           Join Room
         </button>
 
-        {/* 🔹 Footer */}
+        {/*  Footer */}
         <p style={{ fontSize: "10px", marginTop: "15px", opacity: 0.5 }}>
           Built by Kritika Kumari 
         </p>
@@ -117,7 +117,7 @@ export default function Home() {
   );
 }
 
-// 🎨 Input Style
+//  Input Style
 const inputStyle = {
   width: "100%",
   padding: "10px",
@@ -129,7 +129,7 @@ const inputStyle = {
   outline: "none",
 };
 
-// 🎨 Buttons
+//  Buttons
 const primaryBtn = {
   width: "100%",
   padding: "10px",

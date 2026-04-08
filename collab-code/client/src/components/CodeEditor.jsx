@@ -12,7 +12,7 @@ export default function CodeEditor({ fullScreen }) {
 
   const { id: roomId } = useParams();
 
-  // 🔥 Sync code
+
   useEffect(() => {
     const handleCodeUpdate = (newCode) => {
       setCode(newCode);
@@ -28,7 +28,6 @@ export default function CodeEditor({ fullScreen }) {
     socket.emit("code_change", { roomId, code: value });
   };
 
-  // 🔥 Run Code
   const handleRun = async () => {
     setLoading(true);
     const result = await runCode(code, language);
@@ -39,7 +38,7 @@ export default function CodeEditor({ fullScreen }) {
   return (
     <div style={{ width: "100%" }}>
       
-      {/* 🔹 Top Bar */}
+  
       <div
         style={{
           display: "flex",
@@ -48,7 +47,7 @@ export default function CodeEditor({ fullScreen }) {
           marginBottom: "10px",
         }}
       >
-        {/* Language */}
+    
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
@@ -66,7 +65,7 @@ export default function CodeEditor({ fullScreen }) {
           <option value="java">Java</option>
         </select>
 
-        {/* Run */}
+      
         <button
           onClick={handleRun}
           style={{
@@ -82,7 +81,7 @@ export default function CodeEditor({ fullScreen }) {
         </button>
       </div>
 
-      {/* 🔥 Editor */}
+
       <div
         style={{
           height: fullScreen ? "80vh" : "400px",
@@ -99,7 +98,6 @@ export default function CodeEditor({ fullScreen }) {
         />
       </div>
 
-      {/* 🔹 Output */}
       <div style={{ marginTop: "10px" }}>
         <h4 style={{ color: "white" }}>Output:</h4>
         <pre
