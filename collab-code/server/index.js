@@ -44,7 +44,7 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("room_users", usersInRoom[roomId]);
   });
 
-  // 🔥 LEAVE ROOM
+  // 🔥 LEAVE ROOM (manual leave button)
   socket.on("leave_room", (roomId) => {
     socket.leave(roomId);
 
@@ -55,6 +55,9 @@ io.on("connection", (socket) => {
 
       io.to(roomId).emit("room_users", usersInRoom[roomId]);
     }
+
+    // 🔥 notify others (remove video)
+    socket.to(roomId).emit("user-disconnected", socket.id);
   });
 
   // ✅ CODE SYNC
@@ -88,43 +91,45 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("draw", { x0, y0, x1, y1 });
   });
 
-  // ✅ DISCONNECT
+  // 🔥 DISCONNECT (important)
   socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+
     for (let roomId in usersInRoom) {
       usersInRoom[roomId] = usersInRoom[roomId].filter(
         (u) => u.id !== socket.id
       );
 
       io.to(roomId).emit("room_users", usersInRoom[roomId]);
-    }
 
-    console.log("User disconnected:", socket.id);
+      // 🔥 notify all users in room
+      socket.to(roomId).emit("user-disconnected", socket.id);
+    }
   });
 });
 
 
-// ✅ CODE EXECUTION
+// ✅ CODE EXECUTION (DEPLOY SAFE)
 app.post("/run", (req, res) => {
   const { code, language } = req.body;
 
-  let command;
-  const fileName = "temp";
-
   try {
-    if (language === "javascript") {
-      fs.writeFileSync(`${fileName}.js`, code);
-      command = `node ${fileName}.js`;
-    } else {
+    if (language !== "javascript") {
       return res.json({
         output: "⚠️ Only JavaScript supported in deployed version",
       });
     }
 
-    exec(command, (error, stdout, stderr) => {
+    const filePath = path.join(__dirname, "temp.js");
+    fs.writeFileSync(filePath, code);
+
+    exec(`node ${filePath}`, (error, stdout, stderr) => {
       if (error) return res.json({ output: error.message });
       if (stderr) return res.json({ output: stderr });
 
       res.json({ output: stdout || "No output" });
+
+      fs.unlinkSync(filePath);
     });
   } catch {
     res.json({ output: "Execution error" });

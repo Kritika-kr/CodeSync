@@ -24,13 +24,7 @@ export default function Room() {
     socket.connect();
     socket.emit("join_room", { roomId, username });
 
-    socket.on("room_users", (users) => {
-      setUsers(users);
-    });
-
-    if (window.innerWidth < 768) {
-      setShowUsers(false);
-    }
+    socket.on("room_users", setUsers);
 
     return () => socket.off("room_users");
   }, []);
@@ -41,120 +35,163 @@ export default function Room() {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+    <div style={styles.container}>
       
-      {/* 🔹 USERS PANEL */}
-      <div
-        style={{
-          width: showUsers ? "200px" : "0px",
-          overflow: "hidden",
-          transition: "0.3s",
-          background: "#1e293b",
-          color: "white",
-          padding: showUsers ? "10px" : "0px",
-        }}
-      >
+      {/* USERS PANEL */}
+      <div style={{ ...styles.sidebar, width: showUsers ? 220 : 0 }}>
         {showUsers && (
           <>
-            <h3>Users ({users.length})</h3>
+            <h3 style={styles.heading}>Users</h3>
 
             {users.map((u) => (
-              <p key={u.id}>• {u.username}</p>
+              <div key={u.id} style={styles.user}>
+                👤 {u.username}
+              </div>
             ))}
 
-            <hr />
+            <div style={styles.divider} />
 
-            <button onClick={() => navigator.clipboard.writeText(roomId)}>
+            <button style={styles.btn} onClick={() => navigator.clipboard.writeText(roomId)}>
               Copy Room ID
             </button>
 
-            <button
-              onClick={leaveRoom}
-              style={{
-                marginTop: "10px",
-                background: "red",
-                color: "white",
-                padding: "6px",
-                border: "none",
-                width: "100%",
-              }}
-            >
+            <button style={styles.leaveBtn} onClick={leaveRoom}>
               Leave Room
             </button>
           </>
         )}
       </div>
 
-      {/* 🔹 CENTER */}
-      <div
-        style={{
-          flex: 1,
-          padding: "10px",
-          overflowY: "auto",
-        }}
-      >
-        {/* 🔥 CONTROL BAR */}
-        <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-          
+      {/* CENTER */}
+      <div style={styles.main}>
+        
+        {/* CONTROL BAR */}
+        <div style={styles.topbar}>
           <button onClick={() => setShowUsers(!showUsers)}>👥</button>
-
-          <button onClick={() => setShowChat(!showChat)}>
-            {showChat ? "Hide Chat" : "Show Chat"}
-          </button>
-
-          <button onClick={() => setShowVideo(!showVideo)}>
-            {showVideo ? "Hide Video" : "Show Video"}
-          </button>
-
-          <button onClick={() => setFullEditor(!fullEditor)}>
-            {fullEditor ? "Exit Editor" : "Full Editor"}
-          </button>
-
-          <button onClick={() => setFullWhiteboard(!fullWhiteboard)}>
-            {fullWhiteboard ? "Exit Board" : "Full Board"}
-          </button>
+          <button onClick={() => setShowChat(!showChat)}>💬</button>
+          <button onClick={() => setShowVideo(!showVideo)}>🎥</button>
+          <button onClick={() => setFullEditor(!fullEditor)}>🖥</button>
+          <button onClick={() => setFullWhiteboard(!fullWhiteboard)}>🎨</button>
         </div>
 
-        <h3>Room: {roomId}</h3>
+        <h3 style={styles.roomId}>Room: {roomId}</h3>
 
         {!fullWhiteboard && <CodeEditor fullScreen={fullEditor} />}
-
         {!fullEditor && <Whiteboard fullScreen={fullWhiteboard} />}
       </div>
 
-      {/* 🔹 RIGHT PANEL (DYNAMIC) */}
+      {/* RIGHT PANEL */}
       {(showChat || showVideo) && (
-        <div
-          style={{
-            width: "300px",
-            display: "flex",
-            flexDirection: "column",
-            borderLeft: "1px solid #334155",
-            background: "#0f172a",
-          }}
-        >
-          {/* Video */}
+        <div style={styles.rightPanel}>
+          
           {showVideo && (
-            <div style={{ padding: "10px", borderBottom: "1px solid #334155" }}>
+            <div style={styles.card}>
               <VideoCall />
             </div>
           )}
 
-          {/* Chat */}
           {showChat && (
-            <div
-              style={{
-                flex: 1,
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
+            <div style={{ ...styles.card, flex: 1, overflow: "hidden" }}>
               <Chat />
             </div>
           )}
+
         </div>
       )}
     </div>
   );
 }
+const styles = {
+  container: {
+    display: "flex",
+    height: "100vh",
+    background: "#0f172a",
+    color: "#e2e8f0",
+    fontFamily: "Arial, sans-serif",
+  },
+
+  // 🔹 LEFT SIDEBAR
+  sidebar: {
+    background: "#020617",
+    padding: "15px",
+    overflow: "hidden",
+    transition: "all 0.3s ease",
+    borderRight: "1px solid #334155",
+  },
+
+  heading: {
+    marginBottom: "12px",
+    fontSize: "16px",
+    fontWeight: "bold",
+  },
+
+  user: {
+    padding: "6px 8px",
+    background: "#1e293b",
+    marginBottom: "6px",
+    borderRadius: "6px",
+    fontSize: "13px",
+  },
+
+  divider: {
+    height: "1px",
+    background: "#334155",
+    margin: "12px 0",
+  },
+
+  btn: {
+    width: "100%",
+    padding: "8px",
+    background: "#3b82f6",
+    border: "none",
+    borderRadius: "6px",
+    color: "white",
+    cursor: "pointer",
+    marginBottom: "8px",
+    fontSize: "13px",
+  },
+
+  leaveBtn: {
+    width: "100%",
+    padding: "8px",
+    background: "#ef4444",
+    border: "none",
+    borderRadius: "6px",
+    color: "white",
+    cursor: "pointer",
+    fontSize: "13px",
+  },
+
+  // 🔹 CENTER
+  main: {
+    flex: 1,
+    padding: "15px",
+    overflowY: "auto",
+  },
+
+  topbar: {
+    display: "flex",
+    gap: "8px",
+    marginBottom: "10px",
+  },
+
+  roomId: {
+    marginBottom: "10px",
+    color: "#94a3b8",
+    fontSize: "13px",
+  },
+
+  // 🔹 RIGHT PANEL
+  rightPanel: {
+    width: "320px",
+    display: "flex",
+    flexDirection: "column",
+    borderLeft: "1px solid #334155",
+    background: "#020617",
+  },
+
+  card: {
+    padding: "10px",
+    borderBottom: "1px solid #334155",
+  },
+};

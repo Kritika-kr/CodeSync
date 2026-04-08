@@ -13,6 +13,7 @@ export default function VideoCall() {
   const [cameraOn, setCameraOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
   const [screenSharing, setScreenSharing] = useState(false);
+  const [fullScreen, setFullScreen] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -28,14 +29,22 @@ export default function VideoCall() {
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
 
+      // ✅ Add both audio + video tracks
       stream.getTracks().forEach((track) => {
         peerConnection.current.addTrack(track, stream);
       });
 
+      // ✅ Receive remote stream
       peerConnection.current.ontrack = (event) => {
         remoteVideo.current.srcObject = event.streams[0];
+
+        // 🔥 Fix autoplay
+        remoteVideo.current.onloadedmetadata = () => {
+          remoteVideo.current.play().catch(() => {});
+        };
       };
 
+      // ✅ ICE candidate
       peerConnection.current.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit("ice-candidate", {
@@ -48,6 +57,7 @@ export default function VideoCall() {
 
     init();
 
+    // 🔥 SIGNALING
     socket.on("video-offer", async (offer) => {
       await peerConnection.current.setRemoteDescription(offer);
 
@@ -69,14 +79,27 @@ export default function VideoCall() {
       }
     });
 
+    // 🔥 USER LEAVE CLEANUP
+    socket.on("user-disconnected", () => {
+      if (remoteVideo.current) {
+        remoteVideo.current.srcObject = null;
+      }
+
+      if (peerConnection.current) {
+        peerConnection.current.close();
+        peerConnection.current = null;
+      }
+    });
+
     return () => {
       socket.off("video-offer");
       socket.off("video-answer");
       socket.off("ice-candidate");
+      socket.off("user-disconnected");
     };
   }, []);
 
-  // 🔥 Start Call
+  // 📞 START CALL
   const startCall = async () => {
     const offer = await peerConnection.current.createOffer();
     await peerConnection.current.setLocalDescription(offer);
@@ -84,18 +107,18 @@ export default function VideoCall() {
     socket.emit("video-offer", { offer, roomId });
   };
 
-  // 🎥 Toggle Camera
+  // 🎥 CAMERA TOGGLE
   const toggleCamera = () => {
-    const videoTrack = localStream.current.getVideoTracks()[0];
-    videoTrack.enabled = !videoTrack.enabled;
-    setCameraOn(videoTrack.enabled);
+    const track = localStream.current.getVideoTracks()[0];
+    track.enabled = !track.enabled;
+    setCameraOn(track.enabled);
   };
 
-  // 🎤 Toggle Mic
+  // 🎤 MIC TOGGLE
   const toggleMic = () => {
-    const audioTrack = localStream.current.getAudioTracks()[0];
-    audioTrack.enabled = !audioTrack.enabled;
-    setMicOn(audioTrack.enabled);
+    const track = localStream.current.getAudioTracks()[0];
+    track.enabled = !track.enabled;
+    setMicOn(track.enabled);
   };
 
   // 🖥️ SCREEN SHARE
@@ -116,8 +139,8 @@ export default function VideoCall() {
       localVideo.current.srcObject = screenStream;
 
       setScreenSharing(true);
+      setFullScreen(true); // 🔥 auto fullscreen
 
-      // 🔥 when user stops sharing
       screenTrack.onended = () => stopScreenShare();
     } else {
       stopScreenShare();
@@ -136,51 +159,106 @@ export default function VideoCall() {
     localVideo.current.srcObject = localStream.current;
 
     setScreenSharing(false);
+    setFullScreen(false);
   };
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <div style={{ textAlign: "center", color: "white" }}>
       <h3>Video Call</h3>
 
-      <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-        <video
-          ref={localVideo}
-          autoPlay
-          muted
+      {/* 🔥 FULLSCREEN */}
+      {fullScreen ? (
+        <div
           style={{
-            width: "120px",
-            borderRadius: "8px",
-            border: "2px solid #22c55e",
+            position: "fixed",
+            inset: 0,
+            background: "black",
+            zIndex: 999,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
           }}
-        />
+        >
+          <video
+            ref={screenSharing ? localVideo : remoteVideo}
+            autoPlay
+            muted={screenSharing}
+            playsInline
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+            }}
+          />
 
-        <video
-          ref={remoteVideo}
-          autoPlay
-          style={{
-            width: "120px",
-            borderRadius: "8px",
-            border: "2px solid #3b82f6",
-          }}
-        />
-      </div>
+          <button
+            onClick={() => setFullScreen(false)}
+            style={{
+              position: "absolute",
+              top: 10,
+              right: 10,
+              background: "red",
+              color: "white",
+              border: "none",
+              padding: "6px 10px",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            Exit
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* NORMAL VIEW */}
+          <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+            <video
+              ref={localVideo}
+              autoPlay
+              muted
+              playsInline
+              style={{
+                width: "120px",
+                borderRadius: "8px",
+                border: "2px solid #22c55e",
+              }}
+            />
 
-      <div style={{ marginTop: "10px", display: "flex", gap: "6px", justifyContent: "center" }}>
-        <button onClick={startCall}>📞</button>
+            <video
+              ref={remoteVideo}
+              autoPlay
+              playsInline
+              style={{
+                width: "120px",
+                borderRadius: "8px",
+                border: "2px solid #3b82f6",
+              }}
+            />
+          </div>
 
-        <button onClick={toggleCamera}>
-          {cameraOn ? "📷" : "🚫📷"}
-        </button>
+          {/* CONTROLS */}
+          <div style={{ marginTop: "10px", display: "flex", gap: "6px", justifyContent: "center" }}>
+            <button onClick={startCall}>📞</button>
 
-        <button onClick={toggleMic}>
-          {micOn ? "🎤" : "🔇"}
-        </button>
+            <button onClick={toggleCamera}>
+              {cameraOn ? "📷" : "🚫📷"}
+            </button>
 
-        {/* 🖥️ Screen Share */}
-        <button onClick={toggleScreenShare}>
-          {screenSharing ? "Stop Share" : "Share Screen"}
-        </button>
-      </div>
+            <button onClick={toggleMic}>
+              {micOn ? "🎤" : "🔇"}
+            </button>
+
+            <button onClick={toggleScreenShare}>
+              {screenSharing ? "Stop Share" : "Share Screen"}
+            </button>
+
+            {/* 🔥 FULLSCREEN BUTTON */}
+            <button onClick={() => setFullScreen(true)}>
+              ⛶
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
