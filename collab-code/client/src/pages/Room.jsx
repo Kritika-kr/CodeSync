@@ -1,6 +1,6 @@
 import { useParams, useLocation } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
-import Chat from "../components/Chat";
+import Chat from "../components/chat";
 import VideoCall from "../components/VideoCall";
 import Whiteboard from "../components/Whiteboard";
 import { useEffect, useState } from "react";
