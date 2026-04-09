@@ -12,51 +12,87 @@ export default function Whiteboard({ fullScreen }) {
   const [color, setColor] = useState("#ffffff");
   const [size, setSize] = useState(2);
 
-  useEffect(() => {
+  // 🔥 HISTORY
+  const history = useRef([]);
+  const redoStack = useRef([]);
+
+  // 🧠 DRAW FUNCTION
+  const drawLine = (ctx, stroke) => {
+    const { x0, y0, x1, y1, color, size, tool } = stroke;
+
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+
+    if (tool === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.lineWidth = size * 5;
+    } else {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = color;
+      ctx.lineWidth = size;
+
+      if (tool === "marker") ctx.lineWidth = size * 3;
+      if (tool === "highlighter") {
+        ctx.globalAlpha = 0.3;
+        ctx.lineWidth = size * 5;
+      } else {
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    ctx.stroke();
+    ctx.closePath();
+  };
+
+  // 🔁 REDRAW
+  const redraw = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    history.current.forEach((stroke) => drawLine(ctx, stroke));
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
 
     canvas.width = canvas.offsetWidth;
     canvas.height = fullScreen ? window.innerHeight * 0.8 : 300;
 
+    const ctx = canvas.getContext("2d");
     ctx.lineCap = "round";
 
-    const drawLine = ({ x0, y0, x1, y1, color, size, tool }) => {
-      ctx.beginPath();
-      ctx.moveTo(x0, y0);
-      ctx.lineTo(x1, y1);
-
-      if (tool === "eraser") {
-        ctx.globalCompositeOperation = "destination-out";
-        ctx.lineWidth = size * 5;
-      } else {
-        ctx.globalCompositeOperation = "source-over";
-        ctx.strokeStyle = color;
-        ctx.lineWidth = size;
-
-        if (tool === "marker") ctx.lineWidth = size * 3;
-        if (tool === "highlighter") {
-          ctx.globalAlpha = 0.3;
-          ctx.lineWidth = size * 5;
-        } else {
-          ctx.globalAlpha = 1;
-        }
-      }
-
-      ctx.stroke();
-      ctx.closePath();
-    };
-
     // 🔥 RECEIVE DRAW
-    socket.on("draw", drawLine);
+    socket.on("draw", (stroke) => {
+      history.current.push(stroke);
+      redraw();
+    });
 
-    // 🔥 CLEAR BOARD
+    // 🔥 RECEIVE UNDO
+    socket.on("undo", () => {
+      history.current.pop();
+      redraw();
+    });
+
+    // 🔥 RECEIVE REDO
+    socket.on("redo", (stroke) => {
+      history.current.push(stroke);
+      redraw();
+    });
+
+    // 🔥 CLEAR
     socket.on("clear", () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      history.current = [];
+      redoStack.current = [];
+      redraw();
     });
 
     return () => {
       socket.off("draw");
+      socket.off("undo");
+      socket.off("redo");
       socket.off("clear");
     };
   }, [fullScreen]);
@@ -80,33 +116,7 @@ export default function Whiteboard({ fullScreen }) {
     const prevX = canvasRef.current.prevX;
     const prevY = canvasRef.current.prevY;
 
-    const ctx = canvasRef.current.getContext("2d");
-
-    ctx.beginPath();
-    ctx.moveTo(prevX, prevY);
-    ctx.lineTo(x, y);
-
-    if (tool === "eraser") {
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.lineWidth = size * 5;
-    } else {
-      ctx.globalCompositeOperation = "source-over";
-      ctx.strokeStyle = color;
-      ctx.lineWidth = size;
-
-      if (tool === "marker") ctx.lineWidth = size * 3;
-      if (tool === "highlighter") {
-        ctx.globalAlpha = 0.3;
-        ctx.lineWidth = size * 5;
-      } else {
-        ctx.globalAlpha = 1;
-      }
-    }
-
-    ctx.stroke();
-
-    socket.emit("draw", {
-      roomId,
+    const stroke = {
       x0: prevX,
       y0: prevY,
       x1: x,
@@ -114,18 +124,47 @@ export default function Whiteboard({ fullScreen }) {
       color,
       size,
       tool,
-    });
+    };
+
+    history.current.push(stroke);
+    redoStack.current = [];
+
+    redraw();
+
+    socket.emit("draw", { roomId, ...stroke });
 
     canvasRef.current.prevX = x;
     canvasRef.current.prevY = y;
   };
 
-  // 🔥 CLEAR BOARD
-  const clearBoard = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+  // 🔥 UNDO
+  const undo = () => {
+    if (history.current.length === 0) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const last = history.current.pop();
+    redoStack.current.push(last);
+
+    redraw();
+    socket.emit("undo", { roomId });
+  };
+
+  // 🔥 REDO
+  const redo = () => {
+    if (redoStack.current.length === 0) return;
+
+    const stroke = redoStack.current.pop();
+    history.current.push(stroke);
+
+    redraw();
+    socket.emit("redo", { roomId, stroke });
+  };
+
+  // 🔥 CLEAR
+  const clearBoard = () => {
+    history.current = [];
+    redoStack.current = [];
+
+    redraw();
     socket.emit("clear", { roomId });
   };
 
@@ -133,21 +172,19 @@ export default function Whiteboard({ fullScreen }) {
     <div style={{ marginTop: "20px" }}>
       <h3 style={{ color: "white" }}>Whiteboard</h3>
 
-      {/* 🎛 TOOLBAR */}
+      {/* TOOLBAR */}
       <div style={styles.toolbar}>
         <button onClick={() => setTool("pencil")}>✏️</button>
         <button onClick={() => setTool("marker")}>🖊️</button>
         <button onClick={() => setTool("highlighter")}>🖍️</button>
         <button onClick={() => setTool("eraser")}>🧽</button>
 
-        {/* COLOR */}
         <input
           type="color"
           value={color}
           onChange={(e) => setColor(e.target.value)}
         />
 
-        {/* SIZE */}
         <input
           type="range"
           min="1"
@@ -156,11 +193,11 @@ export default function Whiteboard({ fullScreen }) {
           onChange={(e) => setSize(e.target.value)}
         />
 
-        {/* CLEAR */}
+        <button onClick={undo}>Undo</button>
+        <button onClick={redo}>Redo</button>
         <button onClick={clearBoard}>Clear</button>
       </div>
 
-      {/* 🎨 CANVAS */}
       <canvas
         ref={canvasRef}
         style={{

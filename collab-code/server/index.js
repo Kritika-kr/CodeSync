@@ -22,27 +22,24 @@ const usersInRoom = {};
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
+  // 🔥 JOIN ROOM
   socket.on("join_room", ({ roomId, username }) => {
     socket.join(roomId);
 
-    if (!usersInRoom[roomId]) {
-      usersInRoom[roomId] = [];
-    }
+    if (!usersInRoom[roomId]) usersInRoom[roomId] = [];
 
-    const exists = usersInRoom[roomId].find(
+    const exists = usersInRoom[roomId].some(
       (u) => u.id === socket.id
     );
 
     if (!exists) {
-      usersInRoom[roomId].push({
-        id: socket.id,
-        username,
-      });
+      usersInRoom[roomId].push({ id: socket.id, username });
     }
 
     io.to(roomId).emit("room_users", usersInRoom[roomId]);
   });
 
+  // 🔥 LEAVE ROOM
   socket.on("leave_room", (roomId) => {
     socket.leave(roomId);
 
@@ -57,18 +54,17 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("user-disconnected", socket.id);
   });
 
+  // 🔥 CODE SYNC
   socket.on("code_change", ({ roomId, code }) => {
     socket.to(roomId).emit("code_update", code);
   });
 
-  
+  // 🔥 CHAT
   socket.on("send_message", ({ roomId, username, message }) => {
-    io.to(roomId).emit("receive_message", {
-      username,
-      message,
-    });
+    io.to(roomId).emit("receive_message", { username, message });
   });
 
+  // 🔥 VIDEO SIGNALING
   socket.on("video-offer", ({ offer, roomId }) => {
     socket.to(roomId).emit("video-offer", offer);
   });
@@ -81,56 +77,84 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("ice-candidate", candidate);
   });
 
- 
-  socket.on("draw", ({ roomId, x0, y0, x1, y1 }) => {
-    socket.to(roomId).emit("draw", { x0, y0, x1, y1 });
+  // 🔥 WHITEBOARD DRAW (FULL DATA)
+  socket.on("draw", (data) => {
+    socket.to(data.roomId).emit("draw", data);
   });
 
- 
+  // 🔥 UNDO
+  socket.on("undo", ({ roomId }) => {
+    socket.to(roomId).emit("undo");
+  });
+
+  // 🔥 REDO
+  socket.on("redo", ({ roomId, stroke }) => {
+    socket.to(roomId).emit("redo", stroke);
+  });
+
+  // 🔥 CLEAR BOARD
+  socket.on("clear", ({ roomId }) => {
+    socket.to(roomId).emit("clear");
+  });
+
+  // 🔥 DISCONNECT
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
 
     for (let roomId in usersInRoom) {
+      const before = usersInRoom[roomId].length;
+
       usersInRoom[roomId] = usersInRoom[roomId].filter(
         (u) => u.id !== socket.id
       );
 
-      io.to(roomId).emit("room_users", usersInRoom[roomId]);
+      if (usersInRoom[roomId].length !== before) {
+        io.to(roomId).emit("room_users", usersInRoom[roomId]);
+        socket.to(roomId).emit("user-disconnected", socket.id);
+      }
 
-    
-      socket.to(roomId).emit("user-disconnected", socket.id);
+      // 🔥 CLEAN EMPTY ROOM
+      if (usersInRoom[roomId].length === 0) {
+        delete usersInRoom[roomId];
+      }
     }
   });
 });
 
 
+// 🚀 SAFE CODE RUNNER
 app.post("/run", (req, res) => {
   const { code, language } = req.body;
 
-  try {
-    if (language !== "javascript") {
-      return res.json({
-        output: "⚠️ Only JavaScript supported in deployed version",
-      });
-    }
+  if (language !== "javascript") {
+    return res.json({
+      output: "⚠️ Only JavaScript supported",
+    });
+  }
 
-    const filePath = path.join(__dirname, "temp.js");
+  try {
+    // 🔥 UNIQUE FILE NAME (IMPORTANT)
+    const fileName = `temp_${Date.now()}.js`;
+    const filePath = path.join(__dirname, fileName);
+
     fs.writeFileSync(filePath, code);
 
-    exec(`node ${filePath}`, (error, stdout, stderr) => {
-      if (error) return res.json({ output: error.message });
-      if (stderr) return res.json({ output: stderr });
+    exec(`node ${filePath}`, { timeout: 5000 }, (error, stdout, stderr) => {
+      let output = "";
 
-      res.json({ output: stdout || "No output" });
+      if (error) output = error.message;
+      else if (stderr) output = stderr;
+      else output = stdout || "No output";
 
-      fs.unlinkSync(filePath);
+      res.json({ output });
+
+      // 🔥 CLEAN FILE
+      fs.unlink(filePath, () => {});
     });
-  } catch {
+  } catch (err) {
     res.json({ output: "Execution error" });
   }
 });
-
-
 
 const PORT = process.env.PORT || 5000;
 
