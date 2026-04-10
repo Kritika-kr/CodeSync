@@ -250,7 +250,7 @@ export default function VideoCall() {
   );
 }
 
-//CLEAN UI STYLES
+
 const styles = {
   container: {
     textAlign: "center",
