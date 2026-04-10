@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuid } from "uuid";
-import { Analytics } from "@vercel/analytics/next"
+
 
 export default function Home() {
   const [roomId, setRoomId] = useState("");
