@@ -10,7 +10,7 @@ export default function Room() {
   const { id: roomId } = useParams();
   const location = useLocation();
 
-  // 🔥 FIX: persist username after reload
+  
   const username =
     location.state?.username ||
     localStorage.getItem("username") ||
@@ -23,7 +23,7 @@ export default function Room() {
   const [fullEditor, setFullEditor] = useState(false);
   const [fullWhiteboard, setFullWhiteboard] = useState(false);
 
-  // 🔥 JOIN ROOM
+  // JOIN ROOM
   useEffect(() => {
     socket.connect();
     socket.emit("join_room", { roomId, username });
@@ -35,7 +35,6 @@ export default function Room() {
     };
   }, []);
 
-  // 🔥 CLEANUP ON TAB CLOSE / REFRESH
   useEffect(() => {
     const handleUnload = () => {
       socket.emit("leave_room", roomId);
@@ -49,11 +48,11 @@ export default function Room() {
     };
   }, []);
 
-  // 🔥 LEAVE ROOM BUTTON
+  //  LEAVE ROOM BUTTON
   const leaveRoom = () => {
     socket.emit("leave_room", roomId);
 
-    // 🔥 Prevent going back to same room
+    //Prevent going back to same room
     window.location.replace("/");
   };
 

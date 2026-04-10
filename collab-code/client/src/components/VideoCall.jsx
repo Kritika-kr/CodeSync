@@ -10,7 +10,7 @@ export default function VideoCall() {
   const peerConnection = useRef(null);
   const localStream = useRef(null);
 
-  // 🔥 Persist camera state
+  //Persist camera state
   const [cameraOn, setCameraOn] = useState(() => {
     const saved = localStorage.getItem("cameraOn");
     return saved !== null ? JSON.parse(saved) : true;
@@ -38,11 +38,11 @@ export default function VideoCall() {
           localVideo.current.srcObject = stream;
         }
 
-        // 🔥 Apply saved camera state
+        // Apply saved camera state
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack) videoTrack.enabled = cameraOn;
 
-        // 🔥 Create connection
+        //Create connection
         peerConnection.current = new RTCPeerConnection({
           iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         });
@@ -75,7 +75,7 @@ export default function VideoCall() {
 
     init();
 
-    // 🔥 SIGNALING
+    // SIGNALING
     socket.on("video-offer", async (offer) => {
       if (!peerConnection.current) return;
 
@@ -112,13 +112,13 @@ export default function VideoCall() {
       socket.off("ice-candidate");
       socket.off("user-disconnected");
 
-      // 🔥 Cleanup
+      // Cleanup
       localStream.current?.getTracks().forEach((t) => t.stop());
       peerConnection.current?.close();
     };
   }, []);
 
-  // 📞 Start call
+  // Start call
   const startCall = async () => {
     if (!peerConnection.current) return;
 
@@ -128,7 +128,7 @@ export default function VideoCall() {
     socket.emit("video-offer", { offer, roomId });
   };
 
-  // 🎥 Camera toggle
+  // Camera toggle
   const toggleCamera = () => {
     const track = localStream.current?.getVideoTracks()[0];
     if (!track) return;
@@ -140,7 +140,7 @@ export default function VideoCall() {
     localStorage.setItem("cameraOn", JSON.stringify(newState));
   };
 
-  // 🎤 Mic toggle
+  // Mic toggle
   const toggleMic = () => {
     const track = localStream.current?.getAudioTracks()[0];
     if (!track) return;
@@ -149,7 +149,7 @@ export default function VideoCall() {
     setMicOn(track.enabled);
   };
 
-  // 🖥️ Screen share
+  // Screen share
   const toggleScreenShare = async () => {
     try {
       if (!peerConnection.current) return;
@@ -202,7 +202,7 @@ export default function VideoCall() {
     <div style={styles.container}>
       <h3 style={styles.title}>Video Call</h3>
 
-      {/* 🔥 FULLSCREEN */}
+      {/* FULLSCREEN */}
       {fullScreen ? (
         <div style={styles.fullscreen}>
           <video
@@ -250,7 +250,7 @@ export default function VideoCall() {
   );
 }
 
-// 🎨 CLEAN UI STYLES
+//CLEAN UI STYLES
 const styles = {
   container: {
     textAlign: "center",

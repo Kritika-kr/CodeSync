@@ -7,16 +7,16 @@ export default function Whiteboard({ fullScreen }) {
   const drawing = useRef(false);
   const { id: roomId } = useParams();
 
-  // 🎨 TOOL STATES
+  // TOOL STATES
   const [tool, setTool] = useState("pencil");
   const [color, setColor] = useState("#ffffff");
   const [size, setSize] = useState(2);
 
-  // 🔥 HISTORY
+  // HISTORY
   const history = useRef([]);
   const redoStack = useRef([]);
 
-  // 🧠 DRAW FUNCTION
+  // DRAW FUNCTION
   const drawLine = (ctx, stroke) => {
     const { x0, y0, x1, y1, color, size, tool } = stroke;
 
@@ -45,7 +45,7 @@ export default function Whiteboard({ fullScreen }) {
     ctx.closePath();
   };
 
-  // 🔁 REDRAW
+  // REDRAW
   const redraw = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -64,25 +64,25 @@ export default function Whiteboard({ fullScreen }) {
     const ctx = canvas.getContext("2d");
     ctx.lineCap = "round";
 
-    // 🔥 RECEIVE DRAW
+    // RECEIVE DRAW
     socket.on("draw", (stroke) => {
       history.current.push(stroke);
       redraw();
     });
 
-    // 🔥 RECEIVE UNDO
+    // RECEIVE UNDO
     socket.on("undo", () => {
       history.current.pop();
       redraw();
     });
 
-    // 🔥 RECEIVE REDO
+    // RECEIVE REDO
     socket.on("redo", (stroke) => {
       history.current.push(stroke);
       redraw();
     });
 
-    // 🔥 CLEAR
+    // CLEAR
     socket.on("clear", () => {
       history.current = [];
       redoStack.current = [];
@@ -137,7 +137,7 @@ export default function Whiteboard({ fullScreen }) {
     canvasRef.current.prevY = y;
   };
 
-  // 🔥 UNDO
+  // UNDO
   const undo = () => {
     if (history.current.length === 0) return;
 
@@ -148,7 +148,7 @@ export default function Whiteboard({ fullScreen }) {
     socket.emit("undo", { roomId });
   };
 
-  // 🔥 REDO
+  // REDO
   const redo = () => {
     if (redoStack.current.length === 0) return;
 
@@ -159,7 +159,7 @@ export default function Whiteboard({ fullScreen }) {
     socket.emit("redo", { roomId, stroke });
   };
 
-  // 🔥 CLEAR
+  // CLEAR
   const clearBoard = () => {
     history.current = [];
     redoStack.current = [];
