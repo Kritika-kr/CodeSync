@@ -47,7 +47,7 @@ export default function Home() {
         }}
       >
         {/* Title */}
-        <h1 style={{ marginBottom: "10px" }}>Collab Code</h1>
+        <h1 style={{ marginBottom: "10px" }}>CodeSync</h1>
 
         {/*  Tagline */}
         <p style={{ fontSize: "14px", opacity: 0.7, marginBottom: "20px" }}>

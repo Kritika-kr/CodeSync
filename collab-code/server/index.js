@@ -22,7 +22,7 @@ const usersInRoom = {};
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  // 🔥 JOIN ROOM
+  // JOIN ROOM
   socket.on("join_room", ({ roomId, username }) => {
     socket.join(roomId);
 
@@ -39,7 +39,7 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("room_users", usersInRoom[roomId]);
   });
 
-  // 🔥 LEAVE ROOM
+  // LEAVE ROOM
   socket.on("leave_room", (roomId) => {
     socket.leave(roomId);
 
@@ -54,17 +54,17 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("user-disconnected", socket.id);
   });
 
-  // 🔥 CODE SYNC
+  // CODE SYNC
   socket.on("code_change", ({ roomId, code }) => {
     socket.to(roomId).emit("code_update", code);
   });
 
-  // 🔥 CHAT
+  // CHAT
   socket.on("send_message", ({ roomId, username, message }) => {
     io.to(roomId).emit("receive_message", { username, message });
   });
 
-  // 🔥 VIDEO SIGNALING
+  // VIDEO SIGNALING
   socket.on("video-offer", ({ offer, roomId }) => {
     socket.to(roomId).emit("video-offer", offer);
   });
@@ -77,27 +77,27 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("ice-candidate", candidate);
   });
 
-  // 🔥 WHITEBOARD DRAW (FULL DATA)
+  // WHITEBOARD DRAW (FULL DATA)
   socket.on("draw", (data) => {
     socket.to(data.roomId).emit("draw", data);
   });
 
-  // 🔥 UNDO
+  // UNDO
   socket.on("undo", ({ roomId }) => {
     socket.to(roomId).emit("undo");
   });
 
-  // 🔥 REDO
+  // REDO
   socket.on("redo", ({ roomId, stroke }) => {
     socket.to(roomId).emit("redo", stroke);
   });
 
-  // 🔥 CLEAR BOARD
+  // CLEAR BOARD
   socket.on("clear", ({ roomId }) => {
     socket.to(roomId).emit("clear");
   });
 
-  // 🔥 DISCONNECT
+  // DISCONNECT
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
 
@@ -122,7 +122,7 @@ io.on("connection", (socket) => {
 });
 
 
-// 🚀 SAFE CODE RUNNER
+// SAFE CODE RUNNER
 app.post("/run", (req, res) => {
   const { code, language } = req.body;
 
@@ -133,7 +133,7 @@ app.post("/run", (req, res) => {
   }
 
   try {
-    // 🔥 UNIQUE FILE NAME (IMPORTANT)
+    // UNIQUE FILE NAME (IMPORTANT)
     const fileName = `temp_${Date.now()}.js`;
     const filePath = path.join(__dirname, fileName);
 
@@ -148,7 +148,7 @@ app.post("/run", (req, res) => {
 
       res.json({ output });
 
-      // 🔥 CLEAN FILE
+      // CLEAN FILE
       fs.unlink(filePath, () => {});
     });
   } catch (err) {
