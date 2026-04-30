@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import Home from "./pages/Home";
 import Room from "./pages/Room";
-import { ThemeProvider } from "./context/ThemeContext";
+import { ThemeProvider } from "./context/Theme";
 
 function AnimatedRoutes() {
   const location = useLocation();

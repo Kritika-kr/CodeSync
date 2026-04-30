@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import socket from "../socket";
 import { AnimatePresence, motion } from "framer-motion";
 import PreJoin from "../components/PreJoin";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../context/Theme";
 import LoadingScreen from "../components/LoadingScreen";
 import {
   Users, MessageSquare, Video, Maximize,
