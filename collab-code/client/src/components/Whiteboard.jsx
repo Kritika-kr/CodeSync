@@ -1,11 +1,126 @@
 import { useRef, useEffect, useState } from "react";
 import socket from "../socket";
 import { useParams } from "react-router-dom";
+const styles = {
+  wrapper: {
+    position: "relative",
+    marginTop: "20px",
+    height: "100%",
+  },
+
+  /* FLOATING TOOLBAR */
+  toolbar: {
+    position: "absolute",
+    top: "-20px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "10px 16px",
+    borderRadius: "14px",
+
+    background: "rgba(0,0,0,0.6)", // works for both themes
+    backdropFilter: "blur(12px)",
+    border: "1px solid var(--border)",
+    boxShadow: "0 10px 40px rgba(0,0,0,0.25)",
+    zIndex: 10,
+  },
+
+  toolGroup: {
+    display: "flex",
+    gap: "8px",
+    alignItems: "center",
+  },
+
+  divider: {
+    width: "1px",
+    height: "20px",
+    background: "var(--border)",
+  },
+
+  tool: {
+    background: "var(--card)",
+    border: "1px solid var(--border)",
+    padding: "8px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    color: "var(--text)",
+    transition: "0.2s",
+  },
+
+  active: {
+    background: "var(--primary)",
+    border: "none",
+    padding: "8px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    color: "#fff",
+    boxShadow: "0 0 12px rgba(37,99,235,0.6)",
+  },
+
+  action: {
+    background: "var(--card)",
+    border: "1px solid var(--border)",
+    padding: "8px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    color: "var(--text)",
+  },
+
+  clear: {
+    background: "#ef4444",
+    border: "none",
+    padding: "8px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    color: "#fff",
+  },
+
+  color: {
+    width: "36px",
+    height: "30px",
+    border: "1px solid var(--border)",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
+
+  slider: {
+    cursor: "pointer",
+  },
+
+  /* CANVAS WRAPPER */
+  canvasWrapper: {
+    borderRadius: "14px",
+    overflow: "hidden",
+    border: "1px solid var(--border)",
+    background: "var(--card)",
+  },
+
+  /* CANVAS */
+  canvas: {
+    width: "100%",
+    height: "320px",
+    cursor: "crosshair",
+
+    /* 🔥 adaptive grid */
+    backgroundImage: `
+  linear-gradient(var(--grid-color) 1px, transparent 1px),
+  linear-gradient(90deg, var(--grid-color) 1px, transparent 1px)
+`,
+    backgroundSize: "20px 20px",
+  },
+};
 
 export default function Whiteboard({ fullScreen }) {
   const canvasRef = useRef(null);
   const drawing = useRef(false);
   const { id: roomId } = useParams();
+  const [showBoard, setShowBoard] = useState(false);
+
+useEffect(() => {
+  setTimeout(() => setShowBoard(true), 250);
+}, []);
 
   // TOOL STATES
   const [tool, setTool] = useState("pencil");
@@ -169,59 +284,51 @@ export default function Whiteboard({ fullScreen }) {
   };
 
   return (
-    <div style={{ marginTop: "20px" }}>
-      <h3 style={{ color: "white" }}>Whiteboard</h3>
+  <div style={styles.wrapper}>
 
-      {/* TOOLBAR */}
-      <div style={styles.toolbar}>
-        <button onClick={() => setTool("pencil")}>✏️</button>
-        <button onClick={() => setTool("marker")}>🖊️</button>
-        <button onClick={() => setTool("highlighter")}>🖍️</button>
-        <button onClick={() => setTool("eraser")}>🧽</button>
+    {/* FLOATING TOOLBAR */}
+    <div style={styles.toolbar}>
 
-        <input
-          type="color"
-          value={color}
-          onChange={(e) => setColor(e.target.value)}
-        />
-
-        <input
-          type="range"
-          min="1"
-          max="10"
-          value={size}
-          onChange={(e) => setSize(e.target.value)}
-        />
-
-        <button onClick={undo}>Undo</button>
-        <button onClick={redo}>Redo</button>
-        <button onClick={clearBoard}>Clear</button>
+      {/* DRAW TOOLS */}
+      <div style={styles.toolGroup}>
+        <button style={tool === "pencil" ? styles.active : styles.tool} onClick={() => setTool("pencil")}>✏️</button>
+        <button style={tool === "marker" ? styles.active : styles.tool} onClick={() => setTool("marker")}>🖊️</button>
+        <button style={tool === "highlighter" ? styles.active : styles.tool} onClick={() => setTool("highlighter")}>🖍️</button>
+        <button style={tool === "eraser" ? styles.active : styles.tool} onClick={() => setTool("eraser")}>🧽</button>
       </div>
 
+      {/* DIVIDER */}
+      <div style={styles.divider}></div>
+
+      {/* CONTROLS */}
+      <div style={styles.toolGroup}>
+        <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={styles.color}/>
+        <input type="range" min="1" max="10" value={size} onChange={(e) => setSize(e.target.value)} style={styles.slider}/>
+      </div>
+
+      {/* DIVIDER */}
+      <div style={styles.divider}></div>
+
+      {/* ACTIONS */}
+      <div style={styles.toolGroup}>
+        <button style={styles.action} onClick={undo}>↩</button>
+        <button style={styles.action} onClick={redo}>↪</button>
+        <button style={styles.clear} onClick={clearBoard}>🗑</button>
+      </div>
+
+    </div>
+
+    {/* CANVAS */}
+    <div style={styles.canvasWrapper}>
       <canvas
         ref={canvasRef}
-        style={{
-          background: "#020617",
-          border: "2px solid #334155",
-          borderRadius: "10px",
-          cursor: "crosshair",
-          width: "100%",
-          height: fullScreen ? "80vh" : "300px",
-        }}
+        style={styles.canvas}
         onMouseDown={startDrawing}
         onMouseUp={stopDrawing}
         onMouseLeave={stopDrawing}
         onMouseMove={draw}
       />
     </div>
-  );
-}
 
-const styles = {
-  toolbar: {
-    display: "flex",
-    gap: "8px",
-    marginBottom: "10px",
-    flexWrap: "wrap",
-  },
-};
+  </div>
+);}

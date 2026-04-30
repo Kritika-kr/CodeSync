@@ -2,162 +2,130 @@ const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
-const bodyParser = require("body-parser");
 const { exec } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
 const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: { origin: "*" },
-});
-
+const io = new Server(server, { cors: { origin: "*" } });
 const usersInRoom = {};
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+  console.log("⚡ connected:", socket.id);
 
-  // JOIN ROOM
   socket.on("join_room", ({ roomId, username }) => {
-    socket.join(roomId);
+  socket.join(roomId);
+  if (!usersInRoom[roomId]) usersInRoom[roomId] = [];
 
-    if (!usersInRoom[roomId]) usersInRoom[roomId] = [];
+  // Prevent duplicate — check if already in room
+  const alreadyIn = usersInRoom[roomId].some(u => u.id === socket.id);
+  if (alreadyIn) return;
 
-    const exists = usersInRoom[roomId].some(
-      (u) => u.id === socket.id
-    );
-
-    if (!exists) {
-      usersInRoom[roomId].push({ id: socket.id, username });
-    }
-
-    io.to(roomId).emit("room_users", usersInRoom[roomId]);
+  usersInRoom[roomId].forEach((u) => {
+    io.to(u.id).emit("new-peer-joined", { newPeerId: socket.id });
   });
 
-  // LEAVE ROOM
-  socket.on("leave_room", (roomId) => {
-    socket.leave(roomId);
+  usersInRoom[roomId].push({ id: socket.id, username });
+  io.to(roomId).emit("room_users", usersInRoom[roomId]);
+});
 
-    if (usersInRoom[roomId]) {
-      usersInRoom[roomId] = usersInRoom[roomId].filter(
-        (u) => u.id !== socket.id
-      );
+  socket.on("leave_room", (roomId) => handleLeave(socket, roomId));
 
-      io.to(roomId).emit("room_users", usersInRoom[roomId]);
-    }
-
-    socket.to(roomId).emit("user-disconnected", socket.id);
-  });
-
-  // CODE SYNC
   socket.on("code_change", ({ roomId, code }) => {
     socket.to(roomId).emit("code_update", code);
   });
 
-  // CHAT
   socket.on("send_message", ({ roomId, username, message }) => {
     io.to(roomId).emit("receive_message", { username, message });
   });
 
-  // VIDEO SIGNALING
-  socket.on("video-offer", ({ offer, roomId }) => {
-    socket.to(roomId).emit("video-offer", offer);
+  socket.on("speaking", ({ roomId, username }) => {
+    socket.to(roomId).emit("speaking", username);
   });
 
-  socket.on("video-answer", ({ answer, roomId }) => {
-    socket.to(roomId).emit("video-answer", answer);
+  socket.on("video-offer", ({ offer, to }) => {
+    console.log(`📹 video-offer: ${socket.id} → ${to}`);
+    socket.to(to).emit("video-offer", { offer, from: socket.id });
   });
 
-  socket.on("ice-candidate", ({ candidate, roomId }) => {
-    socket.to(roomId).emit("ice-candidate", candidate);
+  socket.on("video-answer", ({ answer, to }) => {
+    console.log(`📹 video-answer: ${socket.id} → ${to}`);
+    socket.to(to).emit("video-answer", { answer, from: socket.id });
   });
 
-  // WHITEBOARD DRAW (FULL DATA)
-  socket.on("draw", (data) => {
-    socket.to(data.roomId).emit("draw", data);
+  socket.on("ice-candidate", ({ candidate, to }) => {
+    socket.to(to).emit("ice-candidate", { candidate, from: socket.id });
   });
 
-  // UNDO
-  socket.on("undo", ({ roomId }) => {
-    socket.to(roomId).emit("undo");
+  socket.on("peer-media-state", ({ micOn, videoOn, roomId }) => {
+    socket.to(roomId).emit("peer-media-state", { from: socket.id, micOn, videoOn });
   });
 
-  // REDO
-  socket.on("redo", ({ roomId, stroke }) => {
-    socket.to(roomId).emit("redo", stroke);
-  });
+  socket.on("draw", (data) => socket.to(data.roomId).emit("draw", data));
+  socket.on("undo", ({ roomId }) => socket.to(roomId).emit("undo"));
+  socket.on("redo", ({ roomId, stroke }) => socket.to(roomId).emit("redo", stroke));
+  socket.on("clear", ({ roomId }) => socket.to(roomId).emit("clear"));
 
-  // CLEAR BOARD
-  socket.on("clear", ({ roomId }) => {
-    socket.to(roomId).emit("clear");
-  });
-
-  // DISCONNECT
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-
-    for (let roomId in usersInRoom) {
-      const before = usersInRoom[roomId].length;
-
-      usersInRoom[roomId] = usersInRoom[roomId].filter(
-        (u) => u.id !== socket.id
-      );
-
-      if (usersInRoom[roomId].length !== before) {
-        io.to(roomId).emit("room_users", usersInRoom[roomId]);
-        socket.to(roomId).emit("user-disconnected", socket.id);
-      }
-
-      // 🔥 CLEAN EMPTY ROOM
-      if (usersInRoom[roomId].length === 0) {
-        delete usersInRoom[roomId];
-      }
-    }
+    console.log("❌ disconnected:", socket.id);
+    for (const roomId in usersInRoom) handleLeave(socket, roomId);
   });
 });
 
+function handleLeave(socket, roomId) {
+  if (!usersInRoom[roomId]) return;
+  usersInRoom[roomId] = usersInRoom[roomId].filter((u) => u.id !== socket.id);
+  io.to(roomId).emit("room_users", usersInRoom[roomId]);
+  if (usersInRoom[roomId].length === 0) delete usersInRoom[roomId];
+}
 
-// SAFE CODE RUNNER
+const TEMP_DIR = path.join(__dirname, "temp");
+if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR);
+
 app.post("/run", (req, res) => {
   const { code, language } = req.body;
-
-  if (language !== "javascript") {
-    return res.json({
-      output: "⚠️ Only JavaScript supported",
-    });
-  }
+  const id = Date.now();
+  let file, command, cleanupFiles = [];
 
   try {
-    // UNIQUE FILE NAME (IMPORTANT)
-    const fileName = `temp_${Date.now()}.js`;
-    const filePath = path.join(__dirname, fileName);
+    if (language === "javascript") {
+      file = path.join(TEMP_DIR, `temp_${id}.js`);
+      fs.writeFileSync(file, code);
+      command = `node ${file}`;
+      cleanupFiles = [file];
+    } else if (language === "python") {
+      file = path.join(TEMP_DIR, `temp_${id}.py`);
+      fs.writeFileSync(file, code);
+      command = `python3 ${file}`;
+      cleanupFiles = [file];
+    } else if (language === "cpp") {
+      file = path.join(TEMP_DIR, `temp_${id}.cpp`);
+      const exe = path.join(TEMP_DIR, `temp_${id}`);
+      fs.writeFileSync(file, code);
+      command = `g++ ${file} -o ${exe} && ${exe}`;
+      cleanupFiles = [file, exe];
+    } else if (language === "java") {
+      file = path.join(TEMP_DIR, `Main.java`);
+      fs.writeFileSync(file, code);
+      command = `javac ${file} && java -cp ${TEMP_DIR} Main`;
+      cleanupFiles = [file, path.join(TEMP_DIR, "Main.class")];
+    } else {
+      return res.json({ output: "⚠️ Language not supported" });
+    }
 
-    fs.writeFileSync(filePath, code);
-
-    exec(`node ${filePath}`, { timeout: 5000 }, (error, stdout, stderr) => {
-      let output = "";
-
-      if (error) output = error.message;
-      else if (stderr) output = stderr;
-      else output = stdout || "No output";
-
+    exec(command, { timeout: 5000 }, (err, stdout, stderr) => {
+      let output = err ? (stderr || err.message) : (stderr?.trim() || stdout?.trim() || "No output");
       res.json({ output });
-
-      // CLEAN FILE
-      fs.unlink(filePath, () => {});
+      cleanupFiles.forEach((f) => fs.unlink(f, () => {}));
     });
-  } catch (err) {
-    res.json({ output: "Execution error" });
+  } catch (e) {
+    res.json({ output: "Execution error: " + e.message });
   }
 });
 
 const PORT = process.env.PORT || 5000;
-
-server.listen(PORT, () => {
-  console.log("Server running on port", PORT);
-});
+server.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
