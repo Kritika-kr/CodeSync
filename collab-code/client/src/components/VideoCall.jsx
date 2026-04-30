@@ -257,7 +257,7 @@ export default function VideoCall({
 
     return () => socket.off("new-peer-joined");
   }, []);
-  // ✅ Emit join_room AFTER VideoCall is mounted and all listeners are ready
+  
   useEffect(() => {
     console.log("🔄 VideoCall mounted — emitting join_room");
     socket.emit("join_room", { roomId, username });
