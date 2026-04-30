@@ -1,5 +1,8 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+  "builds": [
+    {
+      "src": "collab-code/client/package.json",
+      "use": "@vercel/static-build"
+    }
   ]
 }
