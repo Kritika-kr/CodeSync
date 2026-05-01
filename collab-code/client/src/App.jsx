@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import Home from "./pages/Home";
 import Room from "./pages/Room";
 import { ThemeProvider } from "./context/Theme";
+import { Analytics } from "@vercel/analytics/next"
 
 function AnimatedRoutes() {
   const location = useLocation();
